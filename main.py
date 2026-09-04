@@ -11,7 +11,7 @@ from aiohttp import web
 
 # --- SOZLAMALAR ---
 BOT_TOKEN = "8563862094:AAG2lGzaXjVa6qtvfTMBhGUlZ8mroK6bN9Q"
-ADMIN_ID = 1022350478  # Admin (God Mode)
+ADMIN_ID = 1022350478  # Bosh Admin (Xo'jayin)
 
 WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL", "https://mafia-bot-m8zh.onrender.com")
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
@@ -23,14 +23,15 @@ dp = Dispatcher()
 
 games = {}
 user_db = {}
+username_to_id = {}  # Usernamelarni ID ga bog'lash uchun bazacha
 
 # --- GIF / MEDIA HAVOLALARI ---
 GIFS = {
-    "night": "https://media.giphy.com/media/l2Jhv955I4MpcMMhe/giphy.gif",      # Tun gif
-    "day": "https://media.giphy.com/media/3o6Zt8A83pVR3M6A4U/giphy.gif",        # Kun gif
-    "mafia_shot": "https://media.giphy.com/media/xT1R9LUBvA7R89q0eA/giphy.gif", # Otish gif
-    "doctor_heal": "https://media.giphy.com/media/3o7TKSx0g7d3072224/giphy.gif",# Davolash gif
-    "detective_check": "https://media.giphy.com/media/l41lFw05vM4S8d31C/giphy.gif" # Tekshirish gif
+    "night": "https://media.giphy.com/media/l2Jhv955I4MpcMMhe/giphy.gif",
+    "day": "https://media.giphy.com/media/3o6Zt8A83pVR3M6A4U/giphy.gif",
+    "mafia_shot": "https://media.giphy.com/media/xT1R9LUBvA7R89q0eA/giphy.gif",
+    "doctor_heal": "https://media.giphy.com/media/3o7TKSx0g7d3072224/giphy.gif",
+    "detective_check": "https://media.giphy.com/media/l41lFw05vM4S8d31C/giphy.gif"
 }
 
 ROLES = {
@@ -40,70 +41,86 @@ ROLES = {
     "civilian": {"title": "👨‍🌾 Tinch aholi", "desc": "Kunduzi muhokamada qatnashib, mafiyani topadi."}
 }
 
-# --- BALANS TIZIMI (ENDI ADMIN HAM ODDIY BALANSDA BOSHLAYDI) ---
+# --- BALANS TIZIMI ---
 def get_user_data(user_id):
     if user_id not in user_db:
         user_db[user_id] = {"coins": 100, "diamonds": 0, "cards": [], "referrals": 0}
     return user_db[user_id]
 
-# --- FOYDALANUVCHILARGA TANGA VA OLMOS BERISH (ADMIN PANEL) ---
+def register_user(user: types.User):
+    get_user_data(user.id)
+    if user.username:
+        username_to_id[user.username.lower()] = user.id
+
+# --- YASHIRIN BALANS TO'LDIRISH (USERNAME, REPLY YOKI ID ORQALI) ---
 @dp.message(Command("addcoins"))
 async def add_coins_handler(message: types.Message, command: CommandObject):
     if message.from_user.id != ADMIN_ID:
         return
 
-    if not command.args:
-        await message.answer("⚠️ Qanday ishlatish: `/addcoins ID_RAQAM SUMMA`\n*Misol:* `/addcoins 1022350478 500`", parse_mode="Markdown")
-        return
+    target_id = None
+    amount = 0
 
-    try:
+    # 1-usul: Reply orqali
+    if message.reply_to_message:
+        target_id = message.reply_to_message.from_user.id
+        if command.args and command.args.isdigit():
+            amount = int(command.args)
+    # 2-usul: Username yoki ID va Summa orqali (/addcoins @username 500)
+    elif command.args:
         args = command.args.split()
-        target_id = int(args[0])
-        amount = int(args[1])
+        if len(args) >= 2:
+            target_arg = args[0].replace("@", "").lower()
+            if target_arg.isdigit():
+                target_id = int(target_arg)
+            elif target_arg in username_to_id:
+                target_id = username_to_id[target_arg]
+            
+            if args[1].isdigit():
+                amount = int(args[1])
 
+    if target_id and amount > 0:
         target_data = get_user_data(target_id)
         target_data["coins"] += amount
-
-        await message.answer(f"✅ **Muvaffaqiyatli!**\nFoydalanuvchi (`{target_id}`) hisobiga **{amount} Tanga** qo'shildi!\nHozirgi balansi: **{target_data['coins']} 💰**", parse_mode="Markdown")
-        
-        try:
-            await bot.send_message(target_id, f"🎁 **ADMIN TOMONIDAN HADIYA!**\nSizning hisobingizga **{amount} Tanga 💰** qo'shildi!")
-        except Exception:
-            pass
-    except Exception:
-        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/addcoins 1022350478 500`", parse_mode="Markdown")
+        await message.answer(f"🤫 Balansga {amount} tanga qo'shildi. Hozirgi balans: {target_data['coins']}", parse_mode="Markdown")
+    else:
+        await message.answer("⚠️ Qanday ishlatish:\n• `/addcoins @username 500`\n• Xabarga reply qilib: `/addcoins 500`\n• `/addcoins ID 500`", parse_mode="Markdown")
 
 @dp.message(Command("adddiamonds"))
 async def add_diamonds_handler(message: types.Message, command: CommandObject):
     if message.from_user.id != ADMIN_ID:
         return
 
-    if not command.args:
-        await message.answer("⚠️ Qanday ishlatish: `/adddiamonds ID_RAQAM SUMMA`\n*Misol:* `/adddiamonds 1022350478 5`", parse_mode="Markdown")
-        return
+    target_id = None
+    amount = 0
 
-    try:
+    if message.reply_to_message:
+        target_id = message.reply_to_message.from_user.id
+        if command.args and command.args.isdigit():
+            amount = int(command.args)
+    elif command.args:
         args = command.args.split()
-        target_id = int(args[0])
-        amount = int(args[1])
+        if len(args) >= 2:
+            target_arg = args[0].replace("@", "").lower()
+            if target_arg.isdigit():
+                target_id = int(target_arg)
+            elif target_arg in username_to_id:
+                target_id = username_to_id[target_arg]
+            
+            if args[1].isdigit():
+                amount = int(args[1])
 
+    if target_id and amount > 0:
         target_data = get_user_data(target_id)
         target_data["diamonds"] += amount
+        await message.answer(f"🤫 Balansga {amount} olmos qo'shildi. Hozirgi balans: {target_data['diamonds']}", parse_mode="Markdown")
+    else:
+        await message.answer("⚠️ Qanday ishlatish:\n• `/adddiamonds @username 5`\n• Xabarga reply qilib: `/adddiamonds 5`\n• `/adddiamonds ID 5`", parse_mode="Markdown")
 
-        await message.answer(f"✅ **Muvaffaqiyatli!**\nFoydalanuvchi (`{target_id}`) hisobiga **{amount} Olmos** qo'shildi!\nHozirgi balansi: **{target_data['diamonds']} 💎**", parse_mode="Markdown")
-        
-        try:
-            await bot.send_message(target_id, f"🎁 **ADMIN TOMONIDAN HADIYA!**\nSizning hisobingizga **{amount} Olmos 💎** qo'shildi!")
-        except Exception:
-            pass
-    except Exception:
-        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/adddiamonds 1022350478 5`", parse_mode="Markdown")
-
-# --- HANDLERLAR ---
+# --- ASOSIY BUYRUQLAR ---
 @dp.message(Command("start"))
 async def start_handler(message: types.Message, command: CommandObject):
-    user_id = message.from_user.id
-    get_user_data(user_id)
+    register_user(message.from_user)
     await message.answer(
         "🎭 **MAFIYA: DARK CITY BOTIGA XUSH KELIBSIZ!**\n\n"
         "📖 /info — Rollar katalogi\n"
@@ -116,8 +133,8 @@ async def start_handler(message: types.Message, command: CommandObject):
 
 @dp.message(Command("profile"))
 async def profile_handler(message: types.Message):
+    register_user(message.from_user)
     data = get_user_data(message.from_user.id)
-    # Endi profilda ham hech qanday (God Mode) yozuvi chiqmaydi, oddiy o'yinchi bo'lib ko'rinadi:
     
     await message.answer(
         f"👤 **Foydalanuvchi Profili**\n"
@@ -131,6 +148,7 @@ async def profile_handler(message: types.Message):
 
 @dp.message(Command("game"))
 async def start_game(message: types.Message):
+    register_user(message.from_user)
     if message.chat.type == "private":
         await message.answer("⚠️ O'yinni faqat guruhda boshlash mumkin!")
         return
@@ -177,16 +195,16 @@ async def start_game(message: types.Message):
 @dp.callback_query(F.data.startswith("join_"))
 async def join_game(callback: types.CallbackQuery):
     chat_id = int(callback.data.split("_")[1])
-    user_id = callback.from_user.id
-    get_user_data(user_id)
+    user = callback.from_user
+    register_user(user)
     game = games.get(chat_id)
 
     if not game or game["is_active"]:
         await callback.answer("O'yin allaqachon boshlangan!", show_alert=True)
         return
 
-    if user_id not in game["players"]:
-        game["players"][user_id] = {"name": callback.from_user.full_name, "role": None, "is_alive": True}
+    if user.id not in game["players"]:
+        game["players"][user.id] = {"name": user.full_name, "role": None, "is_alive": True}
         await callback.answer("Siz o'yinga qo'shildingiz!")
 
     player_list = "\n".join([f"👤 **{p['name']}**" for p in game["players"].values()])
