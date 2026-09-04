@@ -48,6 +48,59 @@ def get_user_data(user_id):
             user_db[user_id] = {"coins": 100, "diamonds": 0, "cards": [], "referrals": 0}
     return user_db[user_id]
 
+# --- FOYDALANUVCHILARGA TANGA VA OLMOS BERISH (ADMIN ADMIN PANEL) ---
+@dp.message(Command("addcoins"))
+async def add_coins_handler(message: types.Message, command: CommandObject):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    if not command.args:
+        await message.answer("⚠️ Qanday ishlatish: `/addcoins ID_RAQAM SUMMA`\n*Misol:* `/addcoins 123456789 500`", parse_mode="Markdown")
+        return
+
+    try:
+        args = command.args.split()
+        target_id = int(args[0])
+        amount = int(args[1])
+
+        target_data = get_user_data(target_id)
+        target_data["coins"] += amount
+
+        await message.answer(f"✅ **Muvaffaqiyatli!**\nFoydalanuvchi (`{target_id}`) hisobiga **{amount} Tanga** qo'shildi!\nHozirgi balansi: **{target_data['coins']} 💰**", parse_mode="Markdown")
+        
+        try:
+            await bot.send_message(target_id, f"🎁 **ADMIN TOMONIDAN HADIYA!**\nSizning hisobingizga **{amount} Tanga 💰** qo'shildi!")
+        except Exception:
+            pass
+    except Exception:
+        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/addcoins 123456789 500`", parse_mode="Markdown")
+
+@dp.message(Command("adddiamonds"))
+async def add_diamonds_handler(message: types.Message, command: CommandObject):
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    if not command.args:
+        await message.answer("⚠️ Qanday ishlatish: `/adddiamonds ID_RAQAM SUMMA`\n*Misol:* `/adddiamonds 123456789 5`", parse_mode="Markdown")
+        return
+
+    try:
+        args = command.args.split()
+        target_id = int(args[0])
+        amount = int(args[1])
+
+        target_data = get_user_data(target_id)
+        target_data["diamonds"] += amount
+
+        await message.answer(f"✅ **Muvaffaqiyatli!**\nFoydalanuvchi (`{target_id}`) hisobiga **{amount} Olmos** qo'shildi!\nHozirgi balansi: **{target_data['diamonds']} 💎**", parse_mode="Markdown")
+        
+        try:
+            await bot.send_message(target_id, f"🎁 **ADMIN TOMONIDAN HADIYA!**\nSizning hisobingizga **{amount} Olmos 💎** qo'shildi!")
+        except Exception:
+            pass
+    except Exception:
+        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/adddiamonds 123456789 5`", parse_mode="Markdown")
+
 # --- HANDLERLAR ---
 @dp.message(Command("start"))
 async def start_handler(message: types.Message, command: CommandObject):
@@ -63,6 +116,21 @@ async def start_handler(message: types.Message, command: CommandObject):
         parse_mode="Markdown"
     )
 
+@dp.message(Command("profile"))
+async def profile_handler(message: types.Message):
+    data = get_user_data(message.from_user.id)
+    status = "👑 XO'JAYIN (God Mode)" if message.from_user.id == ADMIN_ID else "🎮 O'yinchi"
+    
+    await message.answer(
+        f"👤 **Foydalanuvchi Profili** ({status})\n"
+        f"🆔 ID: `{message.from_user.id}`\n\n"
+        f"💰 Tangalar: **{data['coins']}**\n"
+        f"💎 Olmoslar: **{data['diamonds']}**\n"
+        f"👥 Taklif qilganlar: **{data['referrals']} kishi**\n"
+        f"🃏 Kartalar: {', '.join(data['cards']) if data['cards'] else 'Mavjud emas'}",
+        parse_mode="Markdown"
+    )
+
 @dp.message(Command("game"))
 async def start_game(message: types.Message):
     if message.chat.type == "private":
@@ -71,12 +139,10 @@ async def start_game(message: types.Message):
 
     chat_id = message.chat.id
     
-    # Agar o'yin keta yotgan bo'lsa
     if chat_id in games and games[chat_id].get("is_active"):
         await message.answer("⚠️ Hozir o'yin ketmoqda! Qayta boshlash uchun tugashini kuting.")
         return
 
-    # Guruh Adminini va Bosh Adminni tekshirish
     member = await bot.get_chat_member(chat_id, message.from_user.id)
     if member.status not in ["administrator", "creator"] and message.from_user.id != ADMIN_ID:
         await message.answer("⛔ **O'yinni faqat Bosh Admin yoki guruh adminlari boshlay oladi!**", parse_mode="Markdown")
@@ -102,7 +168,6 @@ async def start_game(message: types.Message):
         parse_mode="Markdown"
     )
 
-    # 60 Soniyadan keyin avto-start taymeri
     await asyncio.sleep(60)
     if chat_id in games and not games[chat_id]["is_active"]:
         if len(games[chat_id]["players"]) >= 3:
@@ -157,7 +222,6 @@ async def run_game_logic(chat_id):
     game = games[chat_id]
     game["is_active"] = True
 
-    # Rollarni tasodifiy tarqatish
     player_ids = list(game["players"].keys())
     random.shuffle(player_ids)
 
@@ -190,7 +254,6 @@ async def run_game_logic(chat_id):
 
     await asyncio.sleep(3)
 
-    # Otish va davolash natijalari
     await bot.send_animation(
         chat_id=chat_id, 
         animation=GIFS["mafia_shot"], 
@@ -207,7 +270,6 @@ async def run_game_logic(chat_id):
 
     await asyncio.sleep(3)
 
-    # O'yinni tugatish va tozalash
     await bot.send_message(chat_id, "🏆 **O'yin muvaffaqiyatli yakunlandi!**\nYangi o'yin boshlash uchun qayta /game buyrug'ini bosing.")
     
     if chat_id in games:
