@@ -40,22 +40,20 @@ ROLES = {
     "civilian": {"title": "👨‍🌾 Tinch aholi", "desc": "Kunduzi muhokamada qatnashib, mafiyani topadi."}
 }
 
+# --- BALANS TIZIMI (ENDI ADMIN HAM ODDIY BALANSDA BOSHLAYDI) ---
 def get_user_data(user_id):
     if user_id not in user_db:
-        if user_id == ADMIN_ID:
-            user_db[user_id] = {"coins": 999999, "diamonds": 999999, "cards": ["Jekpot", "Xaos"], "referrals": 0}
-        else:
-            user_db[user_id] = {"coins": 100, "diamonds": 0, "cards": [], "referrals": 0}
+        user_db[user_id] = {"coins": 100, "diamonds": 0, "cards": [], "referrals": 0}
     return user_db[user_id]
 
-# --- FOYDALANUVCHILARGA TANGA VA OLMOS BERISH (ADMIN ADMIN PANEL) ---
+# --- FOYDALANUVCHILARGA TANGA VA OLMOS BERISH (ADMIN PANEL) ---
 @dp.message(Command("addcoins"))
 async def add_coins_handler(message: types.Message, command: CommandObject):
     if message.from_user.id != ADMIN_ID:
         return
 
     if not command.args:
-        await message.answer("⚠️ Qanday ishlatish: `/addcoins ID_RAQAM SUMMA`\n*Misol:* `/addcoins 123456789 500`", parse_mode="Markdown")
+        await message.answer("⚠️ Qanday ishlatish: `/addcoins ID_RAQAM SUMMA`\n*Misol:* `/addcoins 1022350478 500`", parse_mode="Markdown")
         return
 
     try:
@@ -73,7 +71,7 @@ async def add_coins_handler(message: types.Message, command: CommandObject):
         except Exception:
             pass
     except Exception:
-        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/addcoins 123456789 500`", parse_mode="Markdown")
+        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/addcoins 1022350478 500`", parse_mode="Markdown")
 
 @dp.message(Command("adddiamonds"))
 async def add_diamonds_handler(message: types.Message, command: CommandObject):
@@ -81,7 +79,7 @@ async def add_diamonds_handler(message: types.Message, command: CommandObject):
         return
 
     if not command.args:
-        await message.answer("⚠️ Qanday ishlatish: `/adddiamonds ID_RAQAM SUMMA`\n*Misol:* `/adddiamonds 123456789 5`", parse_mode="Markdown")
+        await message.answer("⚠️ Qanday ishlatish: `/adddiamonds ID_RAQAM SUMMA`\n*Misol:* `/adddiamonds 1022350478 5`", parse_mode="Markdown")
         return
 
     try:
@@ -99,7 +97,7 @@ async def add_diamonds_handler(message: types.Message, command: CommandObject):
         except Exception:
             pass
     except Exception:
-        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/adddiamonds 123456789 5`", parse_mode="Markdown")
+        await message.answer("❌ Xatolik! ID va summani to'g'ri kiriting.\n*Misol:* `/adddiamonds 1022350478 5`", parse_mode="Markdown")
 
 # --- HANDLERLAR ---
 @dp.message(Command("start"))
@@ -119,10 +117,10 @@ async def start_handler(message: types.Message, command: CommandObject):
 @dp.message(Command("profile"))
 async def profile_handler(message: types.Message):
     data = get_user_data(message.from_user.id)
-    status = "👑 XO'JAYIN (God Mode)" if message.from_user.id == ADMIN_ID else "🎮 O'yinchi"
+    # Endi profilda ham hech qanday (God Mode) yozuvi chiqmaydi, oddiy o'yinchi bo'lib ko'rinadi:
     
     await message.answer(
-        f"👤 **Foydalanuvchi Profili** ({status})\n"
+        f"👤 **Foydalanuvchi Profili**\n"
         f"🆔 ID: `{message.from_user.id}`\n\n"
         f"💰 Tangalar: **{data['coins']}**\n"
         f"💎 Olmoslar: **{data['diamonds']}**\n"
