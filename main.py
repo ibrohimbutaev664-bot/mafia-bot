@@ -25,7 +25,7 @@ games = {}
 user_db = {}
 
 ROLES = {
-    "mafia": {"title": "🕵️‍♂️ Mafiya", "desc": "Tunda yashirincha tinch aholini o'ldiradi."},
+    "mafia": {"title": "🕵️‍♂️ Mafiy", "desc": "Tunda yashirincha tinch aholini o'ldiradi."},
     "doctor": {"title": "🩺 Shifokor", "desc": "Tunda 1 kishini o'limdan saqlab qoladi."},
     "detective": {"title": "🔍 Komissar", "desc": "Tunda gumondorning rolini tekshiradi."},
     "hacker": {"title": "💻 Xaker", "desc": "Tunda bir o'yinchining ovoz berishini bloklaydi."},
