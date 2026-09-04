@@ -12,8 +12,8 @@ from aiohttp import web
 BOT_TOKEN = "8563862094:AAG2lGzaXjVa6qtvfTMBhGUlZ8mroK6bN9Q"
 ADMIN_ID = 1022350478  # Admin (God Mode)
 
-# Server sozlamalari (Render yoki boshqa hostinglar avtomatik port ajratadi)
-WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL", "https://your-app-name.onrender.com")
+# Server sozlamalari (Render avtomatik URL va Port ajratadi)
+WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL", "https://mafia-bot-m8zh.onrender.com")
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 PORT = int(os.getenv("PORT", 8080))
@@ -277,7 +277,7 @@ async def run_game(callback: types.CallbackQuery):
     except Exception:
         pass
 
-    await callback.message.edit_text("🎲 Rollar tarqatildi! 🌃 **TUN TUSHDI** NODE\n\nAktiv rollar shaxsiy chatda harakat qilmoqda...", parse_mode="Markdown")
+    await callback.message.edit_text("🎲 Rollar tarqatildi! 🌃 **TUN TUSHDI**\n\nAktiv rollar shaxsiy chatda harakat qilmoqda...", parse_mode="Markdown")
 
 # --- WEBHOOK ISHGA TUSHIRISH ---
 async def on_startup(bot: Bot) -> None:
