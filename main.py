@@ -25,7 +25,7 @@ games = {}
 user_db = {}
 
 ROLES = {
-    "mafia": {"title": "🕵️‍♂️ Mafiy", "desc": "Tunda yashirincha tinch aholini o'ldiradi."},
+    "mafia": {"title": "🕵️‍♂️ Mafiya", "desc": "Tunda yashirincha tinch aholini o'ldiradi."},
     "doctor": {"title": "🩺 Shifokor", "desc": "Tunda 1 kishini o'limdan saqlab qoladi."},
     "detective": {"title": "🔍 Komissar", "desc": "Tunda gumondorning rolini tekshiradi."},
     "hacker": {"title": "💻 Xaker", "desc": "Tunda bir o'yinchining ovoz berishini bloklaydi."},
@@ -199,10 +199,17 @@ async def process_buy(callback: types.CallbackQuery):
     else:
         await callback.answer("🛍 Xarid muvaffaqiyatli amalga oshirildi!", show_alert=True)
 
+# --- FAQAT ADMINLAR /GAME ISHLATA OLADIGAN QISMI ---
 @dp.message(Command("game"))
 async def start_game(message: types.Message):
     if message.chat.type == "private":
         await message.answer("⚠️ O'yinni faqat guruhda boshlash mumkin!")
+        return
+
+    # Guruh Adminini va Bosh Adminni tekshirish
+    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ["administrator", "creator"] and message.from_user.id != ADMIN_ID:
+        await message.answer("⛔ **O'yinni faqat Bosh Admin yoki guruh adminlari boshlay oladi!**", parse_mode="Markdown")
         return
 
     chat_id = message.chat.id
@@ -252,6 +259,12 @@ async def run_game(callback: types.CallbackQuery):
     chat_id = int(callback.data.split("_")[1])
     game = games.get(chat_id)
     if not game or len(game["players"]) < 1:
+        return
+
+    # O'yinni boshlash tugmasini ham faqat admin bosishi uchun:
+    member = await bot.get_chat_member(chat_id, callback.from_user.id)
+    if member.status not in ["administrator", "creator"] and callback.from_user.id != ADMIN_ID:
+        await callback.answer("⛔ O'yinni faqat admin boshlay oladi!", show_alert=True)
         return
 
     game["is_active"] = True
